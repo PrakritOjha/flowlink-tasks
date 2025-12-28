@@ -1,4 +1,4 @@
-import { Column } from '@/types/kanban';
+import { Column, Task } from '@/types/kanban';
 import { TaskCard } from './TaskCard';
 import { Droppable } from '@hello-pangea/dnd';
 import { Plus } from 'lucide-react';
@@ -6,9 +6,10 @@ import { Plus } from 'lucide-react';
 interface KanbanColumnProps {
   column: Column;
   onAddTask: () => void;
+  onTaskClick?: (task: Task) => void;
 }
 
-export const KanbanColumn = ({ column, onAddTask }: KanbanColumnProps) => {
+export const KanbanColumn = ({ column, onAddTask, onTaskClick }: KanbanColumnProps) => {
   return (
     <div className="flex flex-col gap-4 min-w-[320px] w-[320px]">
       <div className="glass-column-header text-foreground">
@@ -25,7 +26,12 @@ export const KanbanColumn = ({ column, onAddTask }: KanbanColumnProps) => {
             }`}
           >
             {column.tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} index={index} />
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                index={index} 
+                onClick={() => onTaskClick?.(task)}
+              />
             ))}
             {provided.placeholder}
             
