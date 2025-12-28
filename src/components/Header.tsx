@@ -1,15 +1,32 @@
-import { Link2, Bell, Settings, Search, Plus } from 'lucide-react';
+import { Link2, Bell, Settings, Search, Plus, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-export const Header = () => {
+interface HeaderProps {
+  onNewBoard?: () => void;
+}
+
+export const Header = ({ onNewBoard }: HeaderProps) => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
   const navItems = [
     { label: 'Boards', href: '/' },
     { label: 'Timeline', href: '/timeline' },
     { label: 'Dependencies', href: '/dependencies' },
   ];
+
+  const userInitials = user?.user_metadata?.display_name
+    ? user.user_metadata.display_name.slice(0, 2).toUpperCase()
+    : user?.email?.slice(0, 2).toUpperCase() || 'U';
 
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-border/30">
@@ -57,14 +74,38 @@ export const Header = () => {
           <Settings className="w-5 h-5 text-foreground/70" />
         </button>
 
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus className="w-4 h-4" />
-          <span className="text-sm font-medium">New Board</span>
-        </button>
+        {onNewBoard && (
+          <button 
+            onClick={onNewBoard}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm font-medium">New Board</span>
+          </button>
+        )}
 
-        <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-sm font-medium text-foreground">
-          JD
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-sm font-medium text-foreground hover:ring-2 hover:ring-primary/50 transition-all">
+              {userInitials}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user?.user_metadata?.display_name || 'User'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

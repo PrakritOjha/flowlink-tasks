@@ -14,7 +14,175 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      boards: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      columns: {
+        Row: {
+          board_id: string
+          created_at: string
+          id: string
+          position: number
+          title: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          title: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "columns_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_dependencies: {
+        Row: {
+          created_at: string
+          depends_on_task_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          depends_on_task_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          depends_on_task_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          assignee_name: string | null
+          column_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          icon: string
+          id: string
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_name?: string | null
+          column_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          icon?: string
+          id?: string
+          position?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_name?: string | null
+          column_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          icon?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

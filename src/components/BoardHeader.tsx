@@ -1,12 +1,20 @@
 import { Users, Filter, MoreHorizontal } from 'lucide-react';
+import { useBoard } from '@/hooks/useBoard';
 
 export const BoardHeader = () => {
+  const { currentBoard, columns, tasks, dependencies } = useBoard();
+  
+  const totalTasks = tasks.length;
+  const totalDependencies = dependencies.length;
+
   return (
     <div className="flex items-center justify-between px-6 py-4">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Project Alpha</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          {currentBoard?.name || 'Loading...'}
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Sprint 3 • 6 tasks • 2 dependencies
+          {columns.length} columns • {totalTasks} tasks • {totalDependencies} dependencies
         </p>
       </div>
 
