@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, X } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -36,7 +36,6 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Task } from '@/types/kanban';
-import { useToast } from '@/hooks/use-toast';
 
 const taskSchema = z.object({
   title: z
@@ -55,7 +54,7 @@ const taskSchema = z.object({
     .optional(),
   dueDate: z.date().optional(),
   icon: z.enum(['design', 'code', 'planning', 'dependency', 'requirements']),
-  column: z.enum(['todo', 'in-progress', 'done']),
+  column: z.string().min(1, 'Column is required'),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -64,6 +63,8 @@ interface CreateTaskModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreateTask: (task: Omit<Task, 'id'>, column: string) => void;
+  columns?: { id: string; title: string }[];
+  defaultColumnId?: string;
 }
 
 const iconOptions = [
@@ -74,18 +75,17 @@ const iconOptions = [
   { value: 'requirements', label: 'Requirements' },
 ];
 
-const columnOptions = [
-  { value: 'todo', label: 'To Do' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'done', label: 'Done' },
-];
-
 export const CreateTaskModal = ({
   open,
   onOpenChange,
   onCreateTask,
+  columns = [
+    { id: 'todo', title: 'To Do' },
+    { id: 'in-progress', title: 'In Progress' },
+    { id: 'done', title: 'Done' },
+  ],
+  defaultColumnId,
 }: CreateTaskModalProps) => {
-  const { toast } = useToast();
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
@@ -93,8 +93,15 @@ export const CreateTaskModal = ({
       description: '',
       assignee: '',
       icon: 'planning',
-      column: 'todo',
+      column: defaultColumnId || columns[0]?.id || 'todo',
     },
+  });
+
+  // Update default column when it changes
+  useState(() => {
+    if (defaultColumnId) {
+      form.setValue('column', defaultColumnId);
+    }
   });
 
   const onSubmit = (data: TaskFormData) => {
@@ -107,11 +114,13 @@ export const CreateTaskModal = ({
     };
 
     onCreateTask(newTask, data.column);
-    toast({
-      title: 'Task created',
-      description: `"${data.title}" has been added to ${columnOptions.find(c => c.value === data.column)?.label}`,
+    form.reset({
+      title: '',
+      description: '',
+      assignee: '',
+      icon: 'planning',
+      column: defaultColumnId || columns[0]?.id || 'todo',
     });
-    form.reset();
     onOpenChange(false);
   };
 
@@ -256,16 +265,16 @@ export const CreateTaskModal = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-foreground/90">Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="bg-foreground/5 border-border/30 text-foreground">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {columnOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                        {columns.map((column) => (
+                          <SelectItem key={column.id} value={column.id}>
+                            {column.title}
                           </SelectItem>
                         ))}
                       </SelectContent>

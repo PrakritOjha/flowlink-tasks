@@ -1,17 +1,40 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Board, Task } from '@/types/kanban';
-import { initialBoard } from '@/data/initialData';
+import { useBoard } from '@/hooks/useBoard';
 import { KanbanColumn } from './KanbanColumn';
 import { DependencyArrows } from './DependencyArrows';
 import { CreateTaskModal } from './CreateTaskModal';
+import { Board as BoardType, Task as TaskType, Column as ColumnType } from '@/types/kanban';
 
 export const KanbanBoard = () => {
-  const [board, setBoard] = useState<Board>(initialBoard);
+  const { columns, tasks, dependencies, loading, error, addTask, moveTask } = useBoard();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
 
-  const onDragEnd = useCallback((result: DropResult) => {
-    const { destination, source } = result;
+  // Transform DB data to component format
+  const board: BoardType = {
+    columns: columns.map(col => ({
+      id: col.id,
+      title: col.title,
+      tasks: tasks
+        .filter(t => t.column_id === col.id)
+        .sort((a, b) => a.position - b.position)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          description: t.description || '',
+          assignee: t.assignee_name || undefined,
+          dueDate: t.due_date || undefined,
+          icon: (t.icon as TaskType['icon']) || 'planning',
+          dependsOn: dependencies
+            .filter(d => d.task_id === t.id)
+            .map(d => d.depends_on_task_id),
+        })),
+    })),
+  };
+
+  const onDragEnd = useCallback(async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
 
     if (!destination) return;
 
@@ -22,64 +45,82 @@ export const KanbanBoard = () => {
       return;
     }
 
-    setBoard((prevBoard) => {
-      const newColumns = [...prevBoard.columns];
-      
-      const sourceColIndex = newColumns.findIndex(
-        (col) => col.id === source.droppableId
-      );
-      const destColIndex = newColumns.findIndex(
-        (col) => col.id === destination.droppableId
-      );
+    await moveTask(draggableId, destination.droppableId, destination.index);
+  }, [moveTask]);
 
-      const sourceCol = { ...newColumns[sourceColIndex] };
-      const destCol = source.droppableId === destination.droppableId 
-        ? sourceCol 
-        : { ...newColumns[destColIndex] };
-
-      const sourceTasks = [...sourceCol.tasks];
-      const destTasks = source.droppableId === destination.droppableId 
-        ? sourceTasks 
-        : [...destCol.tasks];
-
-      const [movedTask] = sourceTasks.splice(source.index, 1);
-      destTasks.splice(destination.index, 0, movedTask);
-
-      sourceCol.tasks = sourceTasks;
-      destCol.tasks = destTasks;
-
-      newColumns[sourceColIndex] = sourceCol;
-      if (source.droppableId !== destination.droppableId) {
-        newColumns[destColIndex] = destCol;
-      }
-
-      return { columns: newColumns };
-    });
-  }, []);
-
-  const handleCreateTask = useCallback((taskData: Omit<Task, 'id'>, columnId: string) => {
-    const newTask: Task = {
-      ...taskData,
-      id: `task-${Date.now()}`,
-    };
-
-    setBoard((prevBoard) => {
-      const newColumns = prevBoard.columns.map((column) => {
-        if (column.id === columnId) {
-          return {
-            ...column,
-            tasks: [...column.tasks, newTask],
-          };
-        }
-        return column;
+  const handleCreateTask = useCallback(async (taskData: Omit<TaskType, 'id'>, columnId: string) => {
+    const targetColumnId = selectedColumnId || columnId;
+    const column = columns.find(c => c.id === targetColumnId);
+    
+    if (!column) {
+      // If no column found by ID, try to find by title
+      const columnMap: Record<string, string> = {};
+      columns.forEach(c => {
+        if (c.title === 'To Do') columnMap['todo'] = c.id;
+        if (c.title === 'In Progress') columnMap['in-progress'] = c.id;
+        if (c.title === 'Done') columnMap['done'] = c.id;
       });
-      return { columns: newColumns };
-    });
-  }, []);
+      
+      const actualColumnId = columnMap[columnId] || columns[0]?.id;
+      if (!actualColumnId) return;
+      
+      await addTask({
+        column_id: actualColumnId,
+        title: taskData.title,
+        description: taskData.description,
+        assignee_name: taskData.assignee,
+        due_date: taskData.dueDate,
+        icon: taskData.icon,
+      });
+    } else {
+      await addTask({
+        column_id: targetColumnId,
+        title: taskData.title,
+        description: taskData.description,
+        assignee_name: taskData.assignee,
+        due_date: taskData.dueDate,
+        icon: taskData.icon,
+      });
+    }
+    
+    setSelectedColumnId(null);
+  }, [addTask, columns, selectedColumnId]);
 
-  const handleOpenCreateModal = useCallback(() => {
+  const handleOpenCreateModal = useCallback((columnId?: string) => {
+    if (columnId) {
+      setSelectedColumnId(columnId);
+    }
     setIsCreateModalOpen(true);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-destructive mb-2">Failed to load board</p>
+          <p className="text-muted-foreground text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (columns.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-muted-foreground">No columns found. Creating default board...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -95,7 +136,7 @@ export const KanbanBoard = () => {
               <KanbanColumn 
                 key={column.id} 
                 column={column} 
-                onAddTask={handleOpenCreateModal}
+                onAddTask={() => handleOpenCreateModal(column.id)}
               />
             ))}
           </DragDropContext>
@@ -106,6 +147,8 @@ export const KanbanBoard = () => {
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         onCreateTask={handleCreateTask}
+        columns={columns.map(c => ({ id: c.id, title: c.title }))}
+        defaultColumnId={selectedColumnId || undefined}
       />
     </>
   );
