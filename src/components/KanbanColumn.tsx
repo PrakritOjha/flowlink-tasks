@@ -5,9 +5,10 @@ import { Plus } from 'lucide-react';
 
 interface KanbanColumnProps {
   column: Column;
+  onAddTask: () => void;
 }
 
-export const KanbanColumn = ({ column }: KanbanColumnProps) => {
+export const KanbanColumn = ({ column, onAddTask }: KanbanColumnProps) => {
   return (
     <div className="flex flex-col gap-4 min-w-[320px] w-[320px]">
       <div className="glass-column-header text-foreground">
@@ -28,7 +29,10 @@ export const KanbanColumn = ({ column }: KanbanColumnProps) => {
             ))}
             {provided.placeholder}
             
-            <button className="glass-card p-3 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors opacity-60 hover:opacity-100">
+            <button 
+              onClick={onAddTask}
+              className="glass-card p-3 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors opacity-60 hover:opacity-100"
+            >
               <Plus className="w-4 h-4" />
               <span className="text-sm">Add Task</span>
             </button>

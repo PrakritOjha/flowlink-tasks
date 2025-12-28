@@ -1,15 +1,17 @@
 import { useState, useCallback } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Board } from '@/types/kanban';
+import { Board, Task } from '@/types/kanban';
 import { initialBoard } from '@/data/initialData';
 import { KanbanColumn } from './KanbanColumn';
 import { DependencyArrows } from './DependencyArrows';
+import { CreateTaskModal } from './CreateTaskModal';
 
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<Board>(initialBoard);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const onDragEnd = useCallback((result: DropResult) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source } = result;
 
     if (!destination) return;
 
@@ -55,20 +57,56 @@ export const KanbanBoard = () => {
     });
   }, []);
 
+  const handleCreateTask = useCallback((taskData: Omit<Task, 'id'>, columnId: string) => {
+    const newTask: Task = {
+      ...taskData,
+      id: `task-${Date.now()}`,
+    };
+
+    setBoard((prevBoard) => {
+      const newColumns = prevBoard.columns.map((column) => {
+        if (column.id === columnId) {
+          return {
+            ...column,
+            tasks: [...column.tasks, newTask],
+          };
+        }
+        return column;
+      });
+      return { columns: newColumns };
+    });
+  }, []);
+
+  const handleOpenCreateModal = useCallback(() => {
+    setIsCreateModalOpen(true);
+  }, []);
+
   return (
-    <div className="relative w-full overflow-x-auto">
-      <div 
-        id="kanban-container"
-        className="relative flex gap-6 p-6 min-w-max"
-      >
-        <DependencyArrows board={board} />
-        
-        <DragDropContext onDragEnd={onDragEnd}>
-          {board.columns.map((column) => (
-            <KanbanColumn key={column.id} column={column} />
-          ))}
-        </DragDropContext>
+    <>
+      <div className="relative w-full overflow-x-auto">
+        <div 
+          id="kanban-container"
+          className="relative flex gap-6 p-6 min-w-max"
+        >
+          <DependencyArrows board={board} />
+          
+          <DragDropContext onDragEnd={onDragEnd}>
+            {board.columns.map((column) => (
+              <KanbanColumn 
+                key={column.id} 
+                column={column} 
+                onAddTask={handleOpenCreateModal}
+              />
+            ))}
+          </DragDropContext>
+        </div>
       </div>
-    </div>
+
+      <CreateTaskModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onCreateTask={handleCreateTask}
+      />
+    </>
   );
 };
