@@ -107,16 +107,16 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/90">Name</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                        <FormControl>
                           <Input
                             placeholder="Your name"
                             className="pl-10 bg-foreground/5 border-border/30 text-foreground"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -127,17 +127,17 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/90">Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                        <FormControl>
                           <Input
                             type="email"
                             placeholder="you@example.com"
                             className="pl-10 bg-foreground/5 border-border/30 text-foreground"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -148,17 +148,17 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/90">Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                        <FormControl>
                           <Input
                             type="password"
                             placeholder="••••••••"
                             className="pl-10 bg-foreground/5 border-border/30 text-foreground"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -169,17 +169,17 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/90">Confirm Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                        <FormControl>
                           <Input
                             type="password"
                             placeholder="••••••••"
                             className="pl-10 bg-foreground/5 border-border/30 text-foreground"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -202,17 +202,17 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/90">Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                        <FormControl>
                           <Input
                             type="email"
                             placeholder="you@example.com"
                             className="pl-10 bg-foreground/5 border-border/30 text-foreground"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -223,17 +223,17 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/90">Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                        <FormControl>
                           <Input
                             type="password"
                             placeholder="••••••••"
                             className="pl-10 bg-foreground/5 border-border/30 text-foreground"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
