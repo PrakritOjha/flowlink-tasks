@@ -1,10 +1,11 @@
 import { Task } from '@/types/kanban';
-import { Pencil, ListTree, Calendar, Link2, ClipboardCheck } from 'lucide-react';
+import { Pencil, ListTree, Calendar, Link2, ClipboardCheck, MessageSquare } from 'lucide-react';
 import { Draggable } from '@hello-pangea/dnd';
 
 interface TaskCardProps {
   task: Task;
   index: number;
+  onClick?: () => void;
 }
 
 const iconMap = {
@@ -15,8 +16,9 @@ const iconMap = {
   requirements: ClipboardCheck,
 };
 
-export const TaskCard = ({ task, index }: TaskCardProps) => {
+export const TaskCard = ({ task, index, onClick }: TaskCardProps) => {
   const Icon = iconMap[task.icon];
+  const hasDependencies = task.dependsOn && task.dependsOn.length > 0;
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -26,6 +28,7 @@ export const TaskCard = ({ task, index }: TaskCardProps) => {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           data-task-id={task.id}
+          onClick={onClick}
           className={`glass-card p-4 task-card-hover cursor-grab active:cursor-grabbing ${
             snapshot.isDragging ? 'shadow-2xl scale-105' : ''
           }`}
@@ -38,11 +41,19 @@ export const TaskCard = ({ task, index }: TaskCardProps) => {
               <p className="text-muted-foreground text-sm truncate">
                 {task.description}
               </p>
-              {task.assignee && (
-                <p className="text-xs text-muted-foreground/70 mt-2">
-                  {task.id.replace('task-', 'Task ').toUpperCase().slice(0, 6)} - {task.assignee}
-                </p>
-              )}
+              <div className="flex items-center gap-3 mt-2">
+                {task.assignee && (
+                  <p className="text-xs text-muted-foreground/70">
+                    {task.id.replace('task-', 'Task ').toUpperCase().slice(0, 6)} - {task.assignee}
+                  </p>
+                )}
+                {hasDependencies && (
+                  <div className="flex items-center gap-1 text-xs text-primary/70">
+                    <Link2 className="w-3 h-3" />
+                    <span>{task.dependsOn?.length}</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex-shrink-0 p-2 rounded-lg bg-foreground/10">
               <Icon className="w-4 h-4 text-foreground/80" />

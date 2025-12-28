@@ -1,15 +1,18 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { useBoard } from '@/hooks/useBoard';
 import { KanbanColumn } from './KanbanColumn';
 import { DependencyArrows } from './DependencyArrows';
 import { CreateTaskModal } from './CreateTaskModal';
+import { TaskDetailModal } from './TaskDetailModal';
 import { Board as BoardType, Task as TaskType, Column as ColumnType } from '@/types/kanban';
 
 export const KanbanBoard = () => {
-  const { columns, tasks, dependencies, loading, error, addTask, moveTask } = useBoard();
+  const { columns, tasks, dependencies, loading, error, addTask, moveTask, refreshDependencies } = useBoard();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskType | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
   // Transform DB data to component format
   const board: BoardType = {
@@ -32,6 +35,8 @@ export const KanbanBoard = () => {
         })),
     })),
   };
+
+  const allTasks = board.columns.flatMap(c => c.tasks);
 
   const onDragEnd = useCallback(async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -93,6 +98,11 @@ export const KanbanBoard = () => {
     setIsCreateModalOpen(true);
   }, []);
 
+  const handleTaskClick = useCallback((task: TaskType) => {
+    setSelectedTask(task);
+    setIsTaskDetailOpen(true);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -137,6 +147,7 @@ export const KanbanBoard = () => {
                 key={column.id} 
                 column={column} 
                 onAddTask={() => handleOpenCreateModal(column.id)}
+                onTaskClick={handleTaskClick}
               />
             ))}
           </DragDropContext>
@@ -149,6 +160,16 @@ export const KanbanBoard = () => {
         onCreateTask={handleCreateTask}
         columns={columns.map(c => ({ id: c.id, title: c.title }))}
         defaultColumnId={selectedColumnId || undefined}
+      />
+
+      <TaskDetailModal
+        open={isTaskDetailOpen}
+        onOpenChange={setIsTaskDetailOpen}
+        task={selectedTask}
+        allTasks={allTasks}
+        columns={board.columns}
+        dependencies={dependencies}
+        onDependencyChange={refreshDependencies}
       />
     </>
   );

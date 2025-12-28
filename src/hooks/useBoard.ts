@@ -4,7 +4,6 @@ import {
   fetchColumns, 
   fetchTasks, 
   fetchDependencies,
-  createBoard,
   createDefaultBoard,
   createTask,
   moveTask,
@@ -38,7 +37,7 @@ export const useBoard = (boardId?: string) => {
 
   // Fetch all boards for the user
   const loadBoards = useCallback(async () => {
-    if (!user) return;
+    if (!user) return [];
     
     try {
       const data = await fetchBoards();
@@ -48,13 +47,13 @@ export const useBoard = (boardId?: string) => {
       if (data.length === 0) {
         const newBoard = await createDefaultBoard();
         setBoards([newBoard]);
-        return newBoard;
+        return [newBoard];
       }
       
-      return data[0];
+      return data;
     } catch (err) {
       setError((err as Error).message);
-      return null;
+      return [];
     }
   }, [user]);
 
@@ -75,7 +74,12 @@ export const useBoard = (boardId?: string) => {
           const taskIds = tasksData.map(t => t.id);
           const depsData = await fetchDependencies(taskIds);
           setDependencies(depsData);
+        } else {
+          setDependencies([]);
         }
+      } else {
+        setTasks([]);
+        setDependencies([]);
       }
       
       setLoading(false);
@@ -94,16 +98,28 @@ export const useBoard = (boardId?: string) => {
       }
       
       setLoading(true);
-      const board = await loadBoards();
-      if (board) {
-        await loadBoardData(board);
+      const allBoards = await loadBoards();
+      if (allBoards.length > 0) {
+        const targetBoard = boardId 
+          ? allBoards.find(b => b.id === boardId) || allBoards[0]
+          : allBoards[0];
+        await loadBoardData(targetBoard);
       } else {
         setLoading(false);
       }
     };
     
     init();
-  }, [user, loadBoards, loadBoardData]);
+  }, [user, boardId, loadBoards, loadBoardData]);
+
+  // Switch board
+  const switchBoard = useCallback(async (newBoardId: string) => {
+    const board = boards.find(b => b.id === newBoardId);
+    if (board) {
+      setLoading(true);
+      await loadBoardData(board);
+    }
+  }, [boards, loadBoardData]);
 
   // Add task
   const addTask = useCallback(async (taskData: {
@@ -177,6 +193,23 @@ export const useBoard = (boardId?: string) => {
     }
   }, [currentBoard, loadBoardData]);
 
+  // Reload boards list
+  const reloadBoards = useCallback(async () => {
+    const allBoards = await loadBoards();
+    if (allBoards.length > 0 && !currentBoard) {
+      await loadBoardData(allBoards[0]);
+    }
+  }, [loadBoards, loadBoardData, currentBoard]);
+
+  // Refresh dependencies only
+  const refreshDependencies = useCallback(async () => {
+    if (tasks.length > 0) {
+      const taskIds = tasks.map(t => t.id);
+      const depsData = await fetchDependencies(taskIds);
+      setDependencies(depsData);
+    }
+  }, [tasks]);
+
   return {
     boards,
     currentBoard,
@@ -187,6 +220,9 @@ export const useBoard = (boardId?: string) => {
     error,
     addTask,
     moveTask: handleMoveTask,
+    switchBoard,
     refresh,
+    reloadBoards,
+    refreshDependencies,
   };
 };

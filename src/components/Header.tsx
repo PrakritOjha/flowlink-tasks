@@ -1,7 +1,8 @@
-import { Link2, Bell, Settings, Search, Plus, LogOut } from 'lucide-react';
+import { Link2, Settings, Search, Plus, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { NotificationsDropdown } from './NotificationsDropdown';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,9 +67,7 @@ export const Header = ({ onNewBoard }: HeaderProps) => {
           />
         </div>
         
-        <button className="p-2 rounded-lg hover:bg-foreground/5 transition-colors">
-          <Bell className="w-5 h-5 text-foreground/70" />
-        </button>
+        <NotificationsDropdown />
         
         <button className="p-2 rounded-lg hover:bg-foreground/5 transition-colors">
           <Settings className="w-5 h-5 text-foreground/70" />

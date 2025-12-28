@@ -1,19 +1,23 @@
 import { Users, Filter, MoreHorizontal } from 'lucide-react';
 import { useBoard } from '@/hooks/useBoard';
+import { BoardSwitcher } from './BoardSwitcher';
 
 export const BoardHeader = () => {
-  const { currentBoard, columns, tasks, dependencies } = useBoard();
+  const { boards, currentBoard, columns, tasks, dependencies, switchBoard, reloadBoards } = useBoard();
   
   const totalTasks = tasks.length;
   const totalDependencies = dependencies.length;
 
   return (
     <div className="flex items-center justify-between px-6 py-4">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          {currentBoard?.name || 'Loading...'}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+      <div className="space-y-2">
+        <BoardSwitcher
+          boards={boards}
+          currentBoard={currentBoard}
+          onBoardChange={switchBoard}
+          onBoardCreated={reloadBoards}
+        />
+        <p className="text-sm text-muted-foreground">
           {columns.length} columns • {totalTasks} tasks • {totalDependencies} dependencies
         </p>
       </div>
