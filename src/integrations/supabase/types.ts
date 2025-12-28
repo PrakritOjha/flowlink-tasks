@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      board_invites: {
+        Row: {
+          board_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["board_role"]
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["board_role"]
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["board_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_invites_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_members: {
+        Row: {
+          board_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["board_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["board_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["board_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_members_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boards: {
         Row: {
           created_at: string
@@ -264,10 +337,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_board_invite: { Args: { _invite_id: string }; Returns: boolean }
+      can_edit_board: {
+        Args: { _board_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_manage_board: {
+        Args: { _board_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_board_access: {
+        Args: {
+          _board_id: string
+          _min_role?: Database["public"]["Enums"]["board_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      board_role: "viewer" | "editor" | "admin" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -394,6 +483,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      board_role: ["viewer", "editor", "admin", "owner"],
+    },
   },
 } as const
