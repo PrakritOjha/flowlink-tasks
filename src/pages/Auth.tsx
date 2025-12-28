@@ -3,18 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link2, Mail, Lock, User } from 'lucide-react';
+import { Link2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -99,154 +92,108 @@ const Auth = () => {
           </p>
 
           {isSignUp ? (
-            <Form {...signUpForm}>
-              <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-4">
-                <FormField
-                  control={signUpForm.control}
-                  name="displayName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">Name</FormLabel>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            placeholder="Your name"
-                            className="pl-10 bg-foreground/5 border-border/30 text-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="displayName" className="text-foreground/90">Name</Label>
+                <Input
+                  id="displayName"
+                  placeholder="Your name"
+                  className="bg-foreground/5 border-border/30 text-foreground"
+                  {...signUpForm.register('displayName')}
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">Email</FormLabel>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="you@example.com"
-                            className="pl-10 bg-foreground/5 border-border/30 text-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {signUpForm.formState.errors.displayName && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.displayName.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground/90">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="bg-foreground/5 border-border/30 text-foreground"
+                  {...signUpForm.register('email')}
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">Password</FormLabel>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            className="pl-10 bg-foreground/5 border-border/30 text-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {signUpForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-foreground/90">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="bg-foreground/5 border-border/30 text-foreground"
+                  {...signUpForm.register('password')}
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">Confirm Password</FormLabel>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            className="pl-10 bg-foreground/5 border-border/30 text-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {signUpForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.password.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-foreground/90">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  className="bg-foreground/5 border-border/30 text-foreground"
+                  {...signUpForm.register('confirmPassword')}
                 />
-                <Button
-                  type="submit"
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Creating account...' : 'Create account'}
-                </Button>
-              </form>
-            </Form>
+                {signUpForm.formState.errors.confirmPassword && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.confirmPassword.message}</p>
+                )}
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Creating account...' : 'Create account'}
+              </Button>
+            </form>
           ) : (
-            <Form {...signInForm}>
-              <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-4">
-                <FormField
-                  control={signInForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">Email</FormLabel>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="you@example.com"
-                            className="pl-10 bg-foreground/5 border-border/30 text-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email" className="text-foreground/90">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="bg-foreground/5 border-border/30 text-foreground"
+                  {...signInForm.register('email')}
                 />
-                <FormField
-                  control={signInForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">Password</FormLabel>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            className="pl-10 bg-foreground/5 border-border/30 text-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {signInForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{signInForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="signin-password" className="text-foreground/90">Password</Label>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="bg-foreground/5 border-border/30 text-foreground"
+                  {...signInForm.register('password')}
                 />
-                <Button
-                  type="submit"
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </Button>
-              </form>
-            </Form>
+                {signInForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{signInForm.formState.errors.password.message}</p>
+                )}
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign in'}
+              </Button>
+            </form>
           )}
 
           <div className="mt-6 text-center">
