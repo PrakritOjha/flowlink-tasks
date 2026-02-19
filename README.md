@@ -1,6 +1,6 @@
 # TaskLink — Collaborative Kanban Project Manager
 
-A full-stack collaborative project management app built with React, TypeScript, and Lovable Cloud.
+A full-stack collaborative project management app built with React, TypeScript, and Supabase.
 
 ---
 
@@ -144,10 +144,12 @@ Invited User (User B):
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 18, TypeScript, Tailwind CSS, shadcn/ui |
-| Backend | Lovable Cloud (Postgres, Auth, RLS, Realtime) |
+| Backend | Supabase (Postgres, Auth, RLS, Realtime) |
 | Drag & Drop | @hello-pangea/dnd |
-| State | React hooks + realtime subscriptions |
+| Charts | Recharts |
+| State | React hooks + Supabase realtime subscriptions |
 | Routing | react-router-dom |
+| Build | Vite + SWC |
 
 ---
 
@@ -156,39 +158,136 @@ Invited User (User B):
 ```
 src/
 ├── components/
-│   ├── KanbanBoard.tsx          # Main board with drag-and-drop
-│   ├── KanbanColumn.tsx         # Column with task list
-│   ├── TaskCard.tsx             # Individual task card
+│   ├── Header.tsx               # App header with nav, search, notifications, profile
+│   ├── NavLink.tsx              # Active-aware navigation link wrapper
+│   ├── KanbanBoard.tsx          # Main board with drag-and-drop columns
+│   ├── KanbanColumn.tsx         # Droppable column with task list
+│   ├── TaskCard.tsx             # Draggable task card
 │   ├── TaskDetailModal.tsx      # Task details, deps, comments
+│   ├── CreateTaskModal.tsx      # Form modal to create tasks (Zod validated)
 │   ├── BoardSwitcher.tsx        # Board selection dropdown
-│   ├── BoardHeader.tsx          # Board stats and team avatars
+│   ├── BoardHeader.tsx          # Board stats, team avatars, filters
+│   ├── DependencyArrows.tsx     # SVG arrow overlay for dependency lines
+│   ├── DependencyFlowView.tsx   # Hierarchical dependency flow diagram
 │   ├── TeamManagementModal.tsx  # Invite & manage team members
-│   ├── NotificationsDropdown.tsx
-│   ├── PendingInvitesModal.tsx
-│   └── CreateTaskModal.tsx
+│   ├── NotificationsDropdown.tsx# Bell icon dropdown with notification list
+│   ├── PendingInvitesModal.tsx  # Accept/reject board invitations
+│   └── ui/                      # 48 shadcn/ui primitives (button, dialog, etc.)
 ├── hooks/
-│   ├── useAuth.tsx              # Authentication context
-│   ├── useBoard.ts              # Board data management
-│   ├── useNotifications.ts      # Real-time notifications
-│   ├── useBoardMembers.ts       # Team member management
-│   └── usePendingInvites.ts     # Invitation handling
-├── lib/database/
-│   ├── comments.ts              # Comments CRUD
-│   ├── notifications.ts         # Notifications CRUD
-│   └── members.ts               # Team members CRUD
+│   ├── useAuth.tsx              # Auth context (sign up, sign in, sign out)
+│   ├── useBoard.ts              # Board/column/task/dependency CRUD & state
+│   ├── useNotifications.ts      # Realtime notification subscriptions
+│   ├── useBoardMembers.ts       # Board members & pending invites
+│   ├── usePendingInvites.ts     # Invitation accept/reject
+│   ├── use-mobile.tsx           # Viewport breakpoint detection
+│   └── use-toast.ts             # Toast notification system
+├── lib/
+│   ├── database.ts              # Core DB layer: boards, columns, tasks, deps
+│   ├── database/
+│   │   ├── comments.ts          # Comments CRUD
+│   │   ├── notifications.ts     # Notifications CRUD
+│   │   └── members.ts           # Team members & invites CRUD
+│   └── utils.ts                 # cn() — Tailwind class merge utility
+├── integrations/
+│   └── supabase/
+│       ├── client.ts            # Supabase client initialization
+│       └── types.ts             # Auto-generated DB type definitions
+├── data/
+│   └── initialData.ts           # Default board with sample tasks
+├── types/
+│   └── kanban.ts                # Task, Column, Board, DependencyLine interfaces
 └── pages/
-    ├── Auth.tsx                 # Login / signup
-    ├── Index.tsx                # Main board view
-    └── DependencyView.tsx       # Dependency flow diagram
+    ├── Auth.tsx                 # Login / signup (Zod validated)
+    ├── Index.tsx                # Main board view (protected)
+    ├── DependencyView.tsx       # Dependency flow diagram (protected)
+    └── NotFound.tsx             # 404 page
 ```
+
+---
+
+## 🗺 Routes
+
+| Path | Access | Page | Description |
+|------|--------|------|-------------|
+| `/auth` | Public | Auth | Login / signup (redirects to `/` if already authenticated) |
+| `/` | Protected | Index | Main Kanban board view |
+| `/dependencies` | Protected | DependencyView | Visual task dependency flow diagram |
+| `*` | Public | NotFound | 404 page |
+
+---
+
+## 🗄 Database Schema (Supabase)
+
+### Tables
+
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User display names & avatars (auto-created on signup) |
+| `boards` | Project boards owned by users |
+| `columns` | Kanban columns belonging to a board |
+| `tasks` | Tasks within columns (title, description, assignee, due date, icon) |
+| `task_dependencies` | Links between tasks (task A depends on task B) |
+| `comments` | Comments on tasks |
+| `notifications` | User notifications (task created/moved, comments, member joined) |
+| `board_members` | Team membership with roles per board |
+| `board_invites` | Pending email invitations (expire after 7 days) |
+
+### Custom Enum
+
+- **`board_role`**: `viewer` | `editor` | `admin` | `owner`
+
+### Key Functions
+
+| Function | Purpose |
+|----------|---------|
+| `has_board_access(board, user, role)` | Checks if user has at least the given role |
+| `can_edit_board(board, user)` | Shorthand for editor+ access |
+| `can_manage_board(board, user)` | Shorthand for admin+ access |
+| `accept_board_invite(invite)` | Accepts invite, adds user as member, deletes invite |
+
+### Triggers
+
+| Trigger | Event | Action |
+|---------|-------|--------|
+| `on_auth_user_created` | New user signup | Auto-creates profile |
+| `update_*_updated_at` | Row update on 5 tables | Sets `updated_at = now()` |
+| `on_task_update` | Task insert/move | Notifies board owner |
+| `on_comment_created` | New comment | Notifies board owner |
+| `on_member_joined` | New board member | Notifies board owner |
+
+All tables have **Row Level Security** enabled with policies enforcing the role permission matrix above.
+
+---
+
+## ⚙ Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_SUPABASE_PROJECT_ID="your-project-id"
+VITE_SUPABASE_URL="https://your-project-id.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY="your-anon-key"
+```
+
+Get these from your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API.
 
 ---
 
 ## 🏃 Running Locally
 
 ```sh
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
+git clone https://github.com/PrakritOjha/flowlink-tasks.git
+cd flowlink-tasks
 npm install
 npm run dev
+```
+
+The dev server starts at `http://localhost:8080`.
+
+### With Supabase CLI (optional)
+
+```sh
+supabase login
+supabase link --project-ref YOUR_SUPABASE_PROJECT_ID
+supabase db push   # applies migrations from supabase/migrations/
 ```

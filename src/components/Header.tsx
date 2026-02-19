@@ -26,7 +26,6 @@ export const Header = ({ onNewBoard }: HeaderProps) => {
   
   const navItems = [
     { label: 'Boards', href: '/' },
-    { label: 'Timeline', href: '/timeline' },
     { label: 'Dependencies', href: '/dependencies' },
   ];
 
