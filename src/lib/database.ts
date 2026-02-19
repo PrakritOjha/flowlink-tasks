@@ -23,6 +23,7 @@ export interface DbTask {
   title: string;
   description: string | null;
   assignee_name: string | null;
+  assignee_id: string | null;
   due_date: string | null;
   icon: string;
   position: number;
@@ -61,25 +62,46 @@ export const createBoard = async (name: string, description?: string) => {
     })
     .select()
     .single();
-  
+
+  if (error) throw error;
+
+  const board = data as DbBoard;
+
+  // Create default columns for every new board
+  const { error: colError } = await supabase.from('columns').insert([
+    { board_id: board.id, title: 'To Do', position: 0 },
+    { board_id: board.id, title: 'In Progress', position: 1 },
+    { board_id: board.id, title: 'Done', position: 2 },
+  ]);
+  if (colError) throw colError;
+
+  return board;
+};
+
+export const createDefaultBoard = async () => {
+  // createBoard already creates default columns (To Do, In Progress, Done)
+  return createBoard('My First Board', 'Get started with TaskLink');
+};
+
+export const updateBoard = async (boardId: string, updates: { name?: string; description?: string | null }) => {
+  const { data, error } = await supabase
+    .from('boards')
+    .update(updates)
+    .eq('id', boardId)
+    .select()
+    .single();
+
   if (error) throw error;
   return data as DbBoard;
 };
 
-export const createDefaultBoard = async () => {
-  const board = await createBoard('My First Board', 'Get started with TaskLink');
-  
-  // Create default columns
-  const columnData = [
-    { board_id: board.id, title: 'To Do', position: 0 },
-    { board_id: board.id, title: 'In Progress', position: 1 },
-    { board_id: board.id, title: 'Done', position: 2 },
-  ];
+export const deleteBoard = async (boardId: string) => {
+  const { error } = await supabase
+    .from('boards')
+    .delete()
+    .eq('id', boardId);
 
-  const { error } = await supabase.from('columns').insert(columnData);
   if (error) throw error;
-
-  return board;
 };
 
 // Columns
@@ -124,6 +146,7 @@ export const createTask = async (task: {
   title: string;
   description?: string;
   assignee_name?: string;
+  assignee_id?: string;
   due_date?: string;
   icon?: string;
   position?: number;
@@ -135,13 +158,14 @@ export const createTask = async (task: {
       title: task.title,
       description: task.description || null,
       assignee_name: task.assignee_name || null,
+      assignee_id: task.assignee_id || null,
       due_date: task.due_date || null,
       icon: task.icon || 'planning',
       position: task.position || 0,
     })
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as DbTask;
 };

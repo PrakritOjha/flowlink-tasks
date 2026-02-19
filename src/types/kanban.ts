@@ -3,9 +3,11 @@ export interface Task {
   title: string;
   description: string;
   assignee?: string;
+  assigneeId?: string;
   dueDate?: string;
   icon: 'design' | 'code' | 'planning' | 'dependency' | 'requirements';
   dependsOn?: string[];
+  blockedBy?: string[];
 }
 
 export interface Column {

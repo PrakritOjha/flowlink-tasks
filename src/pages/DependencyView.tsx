@@ -1,14 +1,14 @@
+import { useParams } from 'react-router-dom';
+import { BoardProvider, useBoard } from '@/hooks/useBoard';
 import { Header } from '@/components/Header';
 import { DependencyFlowView } from '@/components/DependencyFlowView';
-import { useBoard } from '@/hooks/useBoard';
 import { Board } from '@/types/kanban';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const DependencyViewPage = () => {
+const DependencyViewContent = () => {
   const { columns, tasks, dependencies, loading, currentBoard } = useBoard();
 
-  // Transform DB data to component format
   const board: Board = {
     columns: columns.map(col => ({
       id: col.id,
@@ -30,32 +30,42 @@ const DependencyViewPage = () => {
     })),
   };
 
+  const backUrl = currentBoard ? `/board/${currentBoard.id}` : '/';
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <Header />
-      <main className="flex-1 flex flex-col">
-        <div className="flex items-center gap-4 px-6 py-4 border-b border-border/30">
-          <Link 
-            to="/"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back to Board</span>
-          </Link>
-          <div className="h-4 w-px bg-border/50" />
-          <h1 className="text-lg font-semibold text-foreground">
-            {currentBoard?.name || 'Project'} - Dependencies
-          </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 sm:px-6 py-3 border-b border-border shrink-0">
+        <Link
+          to={backUrl}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Back to Board</span>
+        </Link>
+        <div className="hidden sm:block h-4 w-px bg-border" />
+        <h1 className="text-base sm:text-lg font-semibold text-foreground truncate">
+          {currentBoard?.name || 'Project'} - Dependencies
+        </h1>
+      </div>
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <DependencyFlowView board={board} />
-        )}
-      </main>
+      ) : (
+        <DependencyFlowView board={board} />
+      )}
     </div>
+  );
+};
+
+const DependencyViewPage = () => {
+  const { boardId } = useParams<{ boardId: string }>();
+
+  return (
+    <BoardProvider boardId={boardId}>
+      <DependencyViewContent />
+    </BoardProvider>
   );
 };
 

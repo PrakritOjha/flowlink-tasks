@@ -42,13 +42,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             display_name: displayName,
           },
@@ -56,26 +53,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
-        if (error.message.includes('already registered')) {
-          toast({
-            title: 'Account exists',
-            description: 'This email is already registered. Please sign in instead.',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Sign up failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        }
+        const isAlreadyRegistered = error.message.toLowerCase().includes('already registered');
+        toast({
+          title: isAlreadyRegistered ? 'Account already exists' : 'Sign up failed',
+          description: isAlreadyRegistered
+            ? 'This email is already registered. Please sign in instead.'
+            : error.message,
+          variant: 'destructive',
+        });
         return { error };
+      }
+
+      // Supabase returns a user with empty identities if the email is already taken
+      // (security feature to prevent email enumeration when confirmation is enabled)
+      if (data.user && data.user.identities?.length === 0) {
+        const err = new Error('This email is already registered. Please sign in instead.');
+        toast({
+          title: 'Account already exists',
+          description: err.message,
+          variant: 'destructive',
+        });
+        return { error: err };
       }
 
       toast({
         title: 'Account created!',
         description: 'You are now signed in.',
       });
+
       return { error: null };
     } catch (err) {
       const error = err as Error;

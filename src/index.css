@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,58 +6,56 @@
 
 @layer base {
   :root {
-    /* TaskLink Blue Gradient Theme */
-    --background: 214 47% 23%;
-    --background-gradient-start: 214 47% 28%;
-    --background-gradient-end: 220 45% 18%;
-    --foreground: 210 40% 98%;
+    /* TaskLink — Clean White + Blue */
+    --background: 220 20% 97%;
+    --background-gradient-start: 220 30% 98%;
+    --background-gradient-end: 225 20% 95%;
+    --foreground: 222 47% 11%;
 
-    /* Glassmorphism cards */
-    --card: 210 50% 70%;
-    --card-foreground: 210 40% 98%;
-    --card-glass: 210 50% 75%;
-    
-    --popover: 214 47% 25%;
-    --popover-foreground: 210 40% 98%;
+    /* Cards — pure white, elevated */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    /* Primary blue accent */
-    --primary: 210 80% 60%;
-    --primary-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Column headers */
-    --secondary: 210 50% 65%;
-    --secondary-foreground: 210 40% 98%;
+    /* Primary — vivid confident blue */
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
 
-    --muted: 214 40% 35%;
-    --muted-foreground: 210 30% 75%;
+    /* Secondaries — light gray tones */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --accent: 210 60% 55%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
 
-    --border: 210 40% 50%;
-    --input: 210 40% 40%;
-    --ring: 210 80% 60%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 1rem;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
 
     /* Custom TaskLink tokens */
-    --glass-bg: 210 50% 70% / 0.25;
-    --glass-border: 210 50% 80% / 0.3;
-    --column-header: 210 50% 60% / 0.5;
-    --card-shadow: 220 50% 10% / 0.2;
-    --dependency-arrow: 210 30% 85%;
-    
-    --sidebar-background: 214 47% 20%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 80% 60%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 214 40% 30%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 210 40% 35%;
-    --sidebar-ring: 210 80% 60%;
+    --glass-bg: 0 0% 100% / 0.85;
+    --glass-border: 220 13% 91% / 1;
+    --column-header: 220 20% 96% / 1;
+    --card-shadow: 220 60% 50% / 0.06;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 221 83% 53%;
   }
 }
 
@@ -68,37 +66,43 @@
 
   body {
     @apply text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, hsl(var(--background-gradient-start)) 0%, hsl(var(--background)) 50%, hsl(var(--background-gradient-end)) 100%);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: linear-gradient(160deg, hsl(var(--background-gradient-start)) 0%, hsl(var(--background)) 40%, hsl(var(--background-gradient-end)) 100%);
     min-height: 100vh;
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply backdrop-blur-md border rounded-xl;
-    background: hsl(var(--glass-bg));
+    @apply border rounded-xl bg-white;
     border-color: hsl(var(--glass-border));
-    box-shadow: 0 8px 32px hsl(var(--card-shadow));
+    box-shadow:
+      0 1px 3px hsl(var(--card-shadow)),
+      0 4px 16px hsl(var(--card-shadow));
   }
-  
+
   .glass-column-header {
-    @apply backdrop-blur-sm rounded-xl py-3 px-6 font-semibold text-center;
+    @apply rounded-xl py-3 px-6 font-semibold text-center uppercase tracking-wide text-sm;
     background: hsl(var(--column-header));
+    color: hsl(var(--muted-foreground));
   }
-  
-  .dependency-line {
-    stroke: hsl(var(--dependency-arrow));
-    stroke-width: 3;
-    fill: none;
+
+  .page-container {
+    @apply max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-8;
   }
-  
+
+  .section-card {
+    @apply glass-card p-6 space-y-4;
+  }
+
   .task-card-hover {
     @apply transition-all duration-200;
   }
-  
+
   .task-card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px hsl(var(--card-shadow));
+    box-shadow:
+      0 4px 12px hsl(var(--card-shadow)),
+      0 12px 40px hsl(220 60% 50% / 0.08);
   }
 }

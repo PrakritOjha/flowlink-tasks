@@ -1,5 +1,5 @@
 import { usePendingInvites } from '@/hooks/usePendingInvites';
-import { useBoard } from '@/hooks/useBoard';
+import { useBoardOptional } from '@/hooks/useBoard';
 import { formatDistanceToNow } from 'date-fns';
 import { Mail, Check, X, Users } from 'lucide-react';
 import {
@@ -19,12 +19,12 @@ interface PendingInvitesModalProps {
 
 export const PendingInvitesModal = ({ open, onOpenChange }: PendingInvitesModalProps) => {
   const { invites, loading, acceptInvite } = usePendingInvites();
-  const { reloadBoards } = useBoard();
+  const boardCtx = useBoardOptional();
 
   const handleAccept = async (inviteId: string) => {
     const success = await acceptInvite(inviteId);
     if (success) {
-      reloadBoards();
+      boardCtx?.reloadBoards();
     }
   };
 

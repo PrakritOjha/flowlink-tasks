@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DbBoard, createBoard } from '@/lib/database';
+import { DbBoard } from '@/lib/database';
 import { ChevronDown, Plus, Layout } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,14 +25,14 @@ interface BoardSwitcherProps {
   boards: DbBoard[];
   currentBoard: DbBoard | null;
   onBoardChange: (boardId: string) => void;
-  onBoardCreated: () => void;
+  onCreateBoard: (name: string, description?: string) => Promise<void>;
 }
 
 export const BoardSwitcher = ({
   boards,
   currentBoard,
   onBoardChange,
-  onBoardCreated,
+  onCreateBoard,
 }: BoardSwitcherProps) => {
   const { toast } = useToast();
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -45,11 +45,10 @@ export const BoardSwitcher = ({
 
     setCreating(true);
     try {
-      await createBoard(newBoardName.trim(), newBoardDescription.trim() || undefined);
+      await onCreateBoard(newBoardName.trim(), newBoardDescription.trim() || undefined);
       setCreateModalOpen(false);
       setNewBoardName('');
       setNewBoardDescription('');
-      onBoardCreated();
       toast({ title: 'Board created successfully' });
     } catch (error) {
       toast({ title: 'Failed to create board', variant: 'destructive' });
@@ -62,7 +61,7 @@ export const BoardSwitcher = ({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-foreground/5 hover:bg-foreground/10 transition-colors">
+          <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors">
             <Layout className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium text-foreground">
               {currentBoard?.name || 'Select Board'}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,6 +37,11 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Task } from '@/types/kanban';
 
+export interface AssigneeOption {
+  id: string;
+  name: string;
+}
+
 const taskSchema = z.object({
   title: z
     .string()
@@ -46,11 +51,11 @@ const taskSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(1, 'Description is required')
-    .max(500, 'Description must be less than 500 characters'),
-  assignee: z
+    .max(500, 'Description must be less than 500 characters')
+    .optional()
+    .transform(v => v === '' ? undefined : v),
+  assigneeId: z
     .string()
-    .max(50, 'Assignee name must be less than 50 characters')
     .optional(),
   dueDate: z.date().optional(),
   icon: z.enum(['design', 'code', 'planning', 'dependency', 'requirements']),
@@ -65,6 +70,7 @@ interface CreateTaskModalProps {
   onCreateTask: (task: Omit<Task, 'id'>, column: string) => void;
   columns?: { id: string; title: string }[];
   defaultColumnId?: string;
+  assigneeOptions?: AssigneeOption[];
 }
 
 const iconOptions = [
@@ -85,30 +91,34 @@ export const CreateTaskModal = ({
     { id: 'done', title: 'Done' },
   ],
   defaultColumnId,
+  assigneeOptions = [],
 }: CreateTaskModalProps) => {
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       title: '',
       description: '',
-      assignee: '',
+      assigneeId: '',
       icon: 'planning',
       column: defaultColumnId || columns[0]?.id || 'todo',
     },
   });
 
   // Update default column when it changes
-  useState(() => {
+  useEffect(() => {
     if (defaultColumnId) {
       form.setValue('column', defaultColumnId);
     }
-  });
+  }, [defaultColumnId, form]);
 
   const onSubmit = (data: TaskFormData) => {
+    const assigneeId = data.assigneeId && data.assigneeId !== '_unassigned' ? data.assigneeId : undefined;
+    const selectedMember = assigneeOptions.find(m => m.id === assigneeId);
     const newTask: Omit<Task, 'id'> = {
       title: data.title,
       description: data.description,
-      assignee: data.assignee || undefined,
+      assignee: selectedMember?.name || undefined,
+      assigneeId,
       dueDate: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : undefined,
       icon: data.icon,
     };
@@ -117,7 +127,7 @@ export const CreateTaskModal = ({
     form.reset({
       title: '',
       description: '',
-      assignee: '',
+      assigneeId: '',
       icon: 'planning',
       column: defaultColumnId || columns[0]?.id || 'todo',
     });
@@ -126,7 +136,7 @@ export const CreateTaskModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-card border-border/50 sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-foreground">
             Create New Task
@@ -172,20 +182,28 @@ export const CreateTaskModal = ({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="assignee"
+                name="assigneeId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-foreground/90">Assignee</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Team member name"
-                        className="bg-foreground/5 border-border/30 text-foreground placeholder:text-muted-foreground"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-foreground/5 border-border/30 text-foreground">
+                          <SelectValue placeholder="Select member" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="_unassigned">Unassigned</SelectItem>
+                        {assigneeOptions.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -233,7 +251,7 @@ export const CreateTaskModal = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="icon"

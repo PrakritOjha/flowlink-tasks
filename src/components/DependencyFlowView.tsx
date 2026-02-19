@@ -1,19 +1,58 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useMemo, useCallback, useState } from 'react';
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  Node,
+  Edge,
+  Handle,
+  Position,
+  NodeProps,
+  ReactFlowProvider,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import dagre from 'dagre';
 import { Board, Task } from '@/types/kanban';
-import { Pencil, ListTree, Calendar, Link2, ClipboardCheck, ArrowRight } from 'lucide-react';
+import { Pencil, ListTree, Calendar, Link2, ClipboardCheck } from 'lucide-react';
 
 interface DependencyFlowViewProps {
   board: Board;
 }
 
-interface FlowNode {
-  task: Task;
-  column: string;
-  level: number;
-  dependents: string[];
+function getLayoutedElements(nodes: Node[], edges: Edge[]) {
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 160 });
+
+  nodes.forEach((node) => {
+    g.setNode(node.id, { width: 260, height: 130 });
+  });
+
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(g);
+
+  const layoutedNodes = nodes.map((node) => {
+    const pos = g.node(node.id);
+    return {
+      ...node,
+      position: { x: pos.x - 130, y: pos.y - 65 },
+    };
+  });
+
+  return { nodes: layoutedNodes, edges };
 }
 
-const iconMap = {
+const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
+  'To Do': { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
+  'In Progress': { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-400' },
+  'Done': { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
+};
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   design: Pencil,
   code: ListTree,
   planning: Calendar,
@@ -21,275 +60,202 @@ const iconMap = {
   requirements: ClipboardCheck,
 };
 
-const columnColors: Record<string, string> = {
-  todo: 'from-amber-500/20 to-amber-600/20 border-amber-500/40',
-  'in-progress': 'from-blue-500/20 to-blue-600/20 border-blue-500/40',
-  done: 'from-emerald-500/20 to-emerald-600/20 border-emerald-500/40',
+type TaskNodeData = {
+  label: string;
+  task: Task;
+  columnTitle: string;
+  depCount: number;
+  blockingCount: number;
 };
 
-const columnLabels: Record<string, string> = {
-  todo: 'To Do',
-  'in-progress': 'In Progress',
-  done: 'Done',
-};
+function TaskFlowNode({ data }: NodeProps<Node<TaskNodeData>>) {
+  const { task, columnTitle, depCount, blockingCount } = data;
+  const Icon = iconMap[task.icon] || Calendar;
+  const status = statusColors[columnTitle] || statusColors['To Do'];
 
-export const DependencyFlowView = ({ board }: DependencyFlowViewProps) => {
-  const [hoveredTask, setHoveredTask] = useState<string | null>(null);
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 w-[260px] cursor-default hover:shadow-md transition-shadow">
+      <Handle type="target" position={Position.Left} className="!bg-blue-500 !w-2.5 !h-2.5 !border-2 !border-white" />
 
-  // Build dependency graph
-  const { nodes, connections } = useMemo(() => {
-    const nodeMap = new Map<string, FlowNode>();
-    const allConnections: { from: string; to: string }[] = [];
+      <div className="flex items-start gap-3">
+        <div className="p-1.5 rounded-lg bg-gray-100 flex-shrink-0">
+          <Icon className="w-3.5 h-3.5 text-gray-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate">{task.title}</h4>
+          <div className={`inline-flex items-center gap-1.5 mt-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+            {columnTitle}
+          </div>
+        </div>
+      </div>
 
-    // Create nodes for all tasks
-    board.columns.forEach((column) => {
-      column.tasks.forEach((task) => {
-        nodeMap.set(task.id, {
-          task,
-          column: column.id,
-          level: 0,
-          dependents: [],
-        });
-      });
-    });
+      {task.assignee && (
+        <p className="text-xs text-gray-500 mt-2 truncate">{task.assignee}</p>
+      )}
 
-    // Build connections and find dependents
-    board.columns.forEach((column) => {
-      column.tasks.forEach((task) => {
+      {(depCount > 0 || blockingCount > 0) && (
+        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-gray-100">
+          {depCount > 0 && (
+            <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full font-medium">
+              {depCount} dep{depCount !== 1 ? 's' : ''}
+            </span>
+          )}
+          {blockingCount > 0 && (
+            <span className="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+              {blockingCount} blocking
+            </span>
+          )}
+        </div>
+      )}
+
+      <Handle type="source" position={Position.Right} className="!bg-blue-500 !w-2.5 !h-2.5 !border-2 !border-white" />
+    </div>
+  );
+}
+
+const nodeTypes = { taskNode: TaskFlowNode };
+
+function FlowInner({ board }: DependencyFlowViewProps) {
+  const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set());
+
+  const { initialNodes, initialEdges, totalTasks, totalDeps, blockingCount } = useMemo(() => {
+    const nodes: Node<TaskNodeData>[] = [];
+    const edges: Edge[] = [];
+    const dependentsMap = new Map<string, number>();
+    let totalDeps = 0;
+
+    board.columns.forEach((col) => {
+      col.tasks.forEach((task) => {
         if (task.dependsOn) {
           task.dependsOn.forEach((depId) => {
-            allConnections.push({ from: depId, to: task.id });
-            const depNode = nodeMap.get(depId);
-            if (depNode) {
-              depNode.dependents.push(task.id);
-            }
+            dependentsMap.set(depId, (dependentsMap.get(depId) || 0) + 1);
           });
         }
       });
     });
 
-    // Calculate levels (tasks with no dependencies = level 0)
-    const calculateLevels = () => {
-      const visited = new Set<string>();
-      const getLevel = (taskId: string): number => {
-        if (visited.has(taskId)) return nodeMap.get(taskId)?.level || 0;
-        visited.add(taskId);
-        
-        const node = nodeMap.get(taskId);
-        if (!node) return 0;
-        
-        const deps = node.task.dependsOn || [];
-        if (deps.length === 0) {
-          node.level = 0;
-          return 0;
+    board.columns.forEach((col) => {
+      col.tasks.forEach((task) => {
+        nodes.push({
+          id: task.id,
+          type: 'taskNode',
+          position: { x: 0, y: 0 },
+          data: {
+            label: task.title,
+            task,
+            columnTitle: col.title,
+            depCount: task.dependsOn?.length || 0,
+            blockingCount: dependentsMap.get(task.id) || 0,
+          },
+        });
+
+        if (task.dependsOn) {
+          task.dependsOn.forEach((depId) => {
+            edges.push({
+              id: `${depId}->${task.id}`,
+              source: depId,
+              target: task.id,
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#3b82f6', strokeWidth: 2 },
+            });
+            totalDeps++;
+          });
         }
-        
-        const maxDepLevel = Math.max(...deps.map(getLevel));
-        node.level = maxDepLevel + 1;
-        return node.level;
-      };
+      });
+    });
 
-      nodeMap.forEach((_, taskId) => getLevel(taskId));
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
+    const blocking = Array.from(dependentsMap.values()).filter((v) => v > 0).length;
+
+    return {
+      initialNodes: layoutedNodes,
+      initialEdges: layoutedEdges,
+      totalTasks: nodes.length,
+      totalDeps,
+      blockingCount: blocking,
     };
-
-    calculateLevels();
-
-    return { nodes: Array.from(nodeMap.values()), connections: allConnections };
   }, [board]);
 
-  // Group nodes by level
-  const nodesByLevel = useMemo(() => {
-    const levels: FlowNode[][] = [];
-    nodes.forEach((node) => {
-      if (!levels[node.level]) {
-        levels[node.level] = [];
-      }
-      levels[node.level].push(node);
-    });
-    return levels;
-  }, [nodes]);
+  const onNodeMouseEnter = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      const connected = new Set<string>();
+      initialEdges.forEach((e) => {
+        if (e.source === node.id || e.target === node.id) {
+          connected.add(e.id);
+        }
+      });
+      setHighlightedEdges(connected);
+    },
+    [initialEdges]
+  );
 
-  const isHighlighted = (taskId: string) => {
-    if (!hoveredTask) return false;
-    if (taskId === hoveredTask) return true;
-    
-    const hoveredNode = nodes.find((n) => n.task.id === hoveredTask);
-    if (!hoveredNode) return false;
-    
-    // Highlight dependencies
-    if (hoveredNode.task.dependsOn?.includes(taskId)) return true;
-    
-    // Highlight dependents
-    if (hoveredNode.dependents.includes(taskId)) return true;
-    
-    return false;
-  };
+  const onNodeMouseLeave = useCallback(() => {
+    setHighlightedEdges(new Set());
+  }, []);
 
-  const isConnectionHighlighted = (from: string, to: string) => {
-    if (!hoveredTask) return false;
-    return (from === hoveredTask || to === hoveredTask);
-  };
+  const styledEdges = useMemo(() => {
+    if (highlightedEdges.size === 0) return initialEdges;
+    return initialEdges.map((e) => ({
+      ...e,
+      style: highlightedEdges.has(e.id)
+        ? { stroke: '#2563eb', strokeWidth: 3 }
+        : { stroke: '#cbd5e1', strokeWidth: 1.5 },
+    }));
+  }, [initialEdges, highlightedEdges]);
 
   return (
-    <div className="p-8 min-h-[600px]">
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-foreground mb-2">Dependency Flow</h2>
-        <p className="text-muted-foreground text-sm">
-          Visualize how tasks depend on each other. Hover to highlight connections.
-        </p>
-      </div>
-
-      {/* Legend */}
-      <div className="flex gap-6 mb-8">
-        {Object.entries(columnLabels).map(([key, label]) => (
-          <div key={key} className="flex items-center gap-2">
-            <div className={`w-4 h-4 rounded bg-gradient-to-br ${columnColors[key]} border`} />
-            <span className="text-sm text-muted-foreground">{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Flow Diagram */}
-      <div className="relative">
-        {/* Connection lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
-          {connections.map((conn, idx) => {
-            const fromEl = document.querySelector(`[data-flow-id="${conn.from}"]`);
-            const toEl = document.querySelector(`[data-flow-id="${conn.to}"]`);
-            
-            if (!fromEl || !toEl) return null;
-            
-            const container = document.querySelector('.flow-container');
-            if (!container) return null;
-            
-            const containerRect = container.getBoundingClientRect();
-            const fromRect = fromEl.getBoundingClientRect();
-            const toRect = toEl.getBoundingClientRect();
-            
-            const fromX = fromRect.right - containerRect.left;
-            const fromY = fromRect.top - containerRect.top + fromRect.height / 2;
-            const toX = toRect.left - containerRect.left;
-            const toY = toRect.top - containerRect.top + toRect.height / 2;
-            
-            const midX = (fromX + toX) / 2;
-            const path = `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
-            
-            const highlighted = isConnectionHighlighted(conn.from, conn.to);
-            
-            return (
-              <path
-                key={`${conn.from}-${conn.to}-${idx}`}
-                d={path}
-                fill="none"
-                stroke={highlighted ? 'hsl(210 80% 60%)' : 'hsl(210 30% 50% / 0.4)'}
-                strokeWidth={highlighted ? 3 : 2}
-                markerEnd="url(#flow-arrow)"
-                className="transition-all duration-200"
-              />
-            );
-          })}
-          <defs>
-            <marker
-              id="flow-arrow"
-              markerWidth="10"
-              markerHeight="7"
-              refX="9"
-              refY="3.5"
-              orient="auto"
-            >
-              <polygon points="0 0, 10 3.5, 0 7" fill="hsl(210 30% 60%)" />
-            </marker>
-          </defs>
-        </svg>
-
-        {/* Nodes by level */}
-        <div className="flow-container flex gap-16 items-start relative" style={{ zIndex: 1 }}>
-          {nodesByLevel.map((levelNodes, levelIdx) => (
-            <div key={levelIdx} className="flex flex-col gap-4">
-              <div className="text-xs text-muted-foreground/60 text-center mb-2">
-                {levelIdx === 0 ? 'Independent' : `Level ${levelIdx}`}
-              </div>
-              {levelNodes.map((node) => {
-                const Icon = iconMap[node.task.icon];
-                const highlighted = isHighlighted(node.task.id);
-                const hasDependencies = (node.task.dependsOn?.length || 0) > 0;
-                const hasDependents = node.dependents.length > 0;
-                
-                return (
-                  <div
-                    key={node.task.id}
-                    data-flow-id={node.task.id}
-                    onMouseEnter={() => setHoveredTask(node.task.id)}
-                    onMouseLeave={() => setHoveredTask(null)}
-                    className={`
-                      relative p-4 rounded-xl border-2 min-w-[200px] cursor-pointer
-                      bg-gradient-to-br ${columnColors[node.column]}
-                      transition-all duration-200
-                      ${highlighted ? 'scale-105 shadow-xl border-primary/60' : 'hover:scale-102'}
-                    `}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-foreground/10">
-                        <Icon className="w-4 h-4 text-foreground/80" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-foreground text-sm">
-                          {node.task.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {node.task.description}
-                        </p>
-                        {node.task.assignee && (
-                          <p className="text-xs text-muted-foreground/70 mt-2">
-                            {node.task.assignee}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Dependency indicators */}
-                    <div className="flex gap-2 mt-3 pt-2 border-t border-foreground/10">
-                      {hasDependencies && (
-                        <span className="text-xs text-muted-foreground bg-foreground/5 px-2 py-0.5 rounded">
-                          {node.task.dependsOn?.length} dep{node.task.dependsOn?.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                      {hasDependents && (
-                        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
-                          {node.dependents.length} blocking
-                        </span>
-                      )}
-                      {!hasDependencies && !hasDependents && (
-                        <span className="text-xs text-muted-foreground/60">
-                          No dependencies
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+    <>
+      {/* ReactFlow canvas — uses flex-1 to fill remaining viewport, with absolute inner to give pixel dimensions */}
+      <div className="flex-1 relative min-h-0">
+        <div className="absolute inset-0">
+          <ReactFlow
+            nodes={initialNodes}
+            edges={styledEdges}
+            nodeTypes={nodeTypes}
+            onNodeMouseEnter={onNodeMouseEnter}
+            onNodeMouseLeave={onNodeMouseLeave}
+            fitView
+            fitViewOptions={{ padding: 0.3 }}
+            proOptions={{ hideAttribution: true }}
+            minZoom={0.3}
+            maxZoom={1.5}
+          >
+            <Background color="#e2e8f0" gap={24} size={1} />
+            <Controls
+              className="!bg-white !border-gray-200 !rounded-lg !shadow-sm [&>button]:!bg-white [&>button]:!border-gray-200 [&>button]:!text-gray-600 [&>button:hover]:!bg-gray-50"
+            />
+            <MiniMap
+              nodeColor="#3b82f6"
+              maskColor="rgba(255,255,255,0.85)"
+              className="!bg-white !border-gray-200 !rounded-lg !shadow-sm"
+            />
+          </ReactFlow>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="mt-12 grid grid-cols-3 gap-4 max-w-xl">
-        <div className="glass-card p-4 text-center">
-          <div className="text-2xl font-bold text-foreground">{nodes.length}</div>
-          <div className="text-sm text-muted-foreground">Total Tasks</div>
+      {/* Stats bar */}
+      <div className="shrink-0 grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 max-w-xl mx-auto w-full">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 text-center">
+          <div className="text-xl font-bold text-foreground">{totalTasks}</div>
+          <div className="text-xs text-muted-foreground">Total Tasks</div>
         </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-2xl font-bold text-foreground">{connections.length}</div>
-          <div className="text-sm text-muted-foreground">Dependencies</div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 text-center">
+          <div className="text-xl font-bold text-primary">{totalDeps}</div>
+          <div className="text-xs text-muted-foreground">Dependencies</div>
         </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-2xl font-bold text-foreground">
-            {nodes.filter((n) => n.dependents.length > 0).length}
-          </div>
-          <div className="text-sm text-muted-foreground">Blocking Tasks</div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 text-center">
+          <div className="text-xl font-bold text-amber-600">{blockingCount}</div>
+          <div className="text-xs text-muted-foreground">Blocking Tasks</div>
         </div>
       </div>
-    </div>
+    </>
   );
-};
+}
+
+export const DependencyFlowView = ({ board }: DependencyFlowViewProps) => (
+  <ReactFlowProvider>
+    <FlowInner board={board} />
+  </ReactFlowProvider>
+);

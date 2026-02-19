@@ -1,4 +1,4 @@
-import { Bell, Check, MessageSquare, ArrowRight, Plus } from 'lucide-react';
+import { Bell, Check, CheckCircle, MessageSquare, ArrowRight, Plus } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -18,6 +18,8 @@ const getNotificationIcon = (type: string) => {
       return <ArrowRight className="w-4 h-4" />;
     case 'task_created':
       return <Plus className="w-4 h-4" />;
+    case 'task_unblocked':
+      return <CheckCircle className="w-4 h-4" />;
     default:
       return <Bell className="w-4 h-4" />;
   }
@@ -29,8 +31,8 @@ export const NotificationsDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="relative p-2 rounded-lg hover:bg-foreground/5 transition-colors">
-          <Bell className="w-5 h-5 text-foreground/70" />
+        <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
+          <Bell className="w-5 h-5 text-muted-foreground" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -38,7 +40,7 @@ export const NotificationsDropdown = () => {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80 max-w-80">
         <div className="flex items-center justify-between px-3 py-2">
           <h3 className="font-semibold text-foreground">Notifications</h3>
           {unreadCount > 0 && (

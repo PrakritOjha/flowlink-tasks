@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  fetchBoardMembers, 
+import {
+  fetchBoardMembers,
   fetchBoardInvites,
   BoardMemberWithProfile,
   DbBoardInvite,
@@ -36,7 +36,7 @@ export const useBoardMembers = (boardId: string | null) => {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [boardId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     members,
