@@ -49,6 +49,7 @@ const buildTaskSchema = (existingTaskTitles: string[]) =>
       .trim()
       .min(1, 'Title is required')
       .max(100, 'Title must be less than 100 characters')
+      .refine((v) => /[a-zA-Z]/.test(v), 'Must contain at least one letter')
       .refine(
         (title) => !existingTaskTitles.includes(title.toLowerCase()),
         'A task with this name already exists on the board'
@@ -57,7 +58,8 @@ const buildTaskSchema = (existingTaskTitles: string[]) =>
       .string()
       .trim()
       .min(1, 'Description is required')
-      .max(500, 'Description must be less than 500 characters'),
+      .max(500, 'Description must be less than 500 characters')
+      .refine((v) => /[a-zA-Z]/.test(v), 'Must contain at least one letter'),
     assigneeId: z
       .string()
       .min(1, 'Assignee is required')

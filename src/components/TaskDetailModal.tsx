@@ -99,6 +99,8 @@ export const TaskDetailModal = ({
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
+  const [editTitleError, setEditTitleError] = useState('');
+  const [editDescriptionError, setEditDescriptionError] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
@@ -137,6 +139,22 @@ export const TaskDetailModal = ({
 
   const handleSave = async () => {
     if (!task) return;
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
+      setEditTitleError('Title is required');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(trimmedTitle)) {
+      setEditTitleError('Must contain at least one letter');
+      return;
+    }
+    setEditTitleError('');
+    const trimmedDesc = editDescription.trim();
+    if (trimmedDesc && !/[a-zA-Z]/.test(trimmedDesc)) {
+      setEditDescriptionError('Must contain at least one letter');
+      return;
+    }
+    setEditDescriptionError('');
     setSaving(true);
     try {
       const assigneeId = editAssigneeId && editAssigneeId !== '_unassigned' ? editAssigneeId : null;
@@ -255,12 +273,15 @@ export const TaskDetailModal = ({
             </div>
             <div className="flex-1 min-w-0">
               {isEditing ? (
-                <Input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="text-xl font-semibold"
-                  placeholder="Task title"
-                />
+                <div>
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => { setEditTitle(e.target.value); setEditTitleError(''); }}
+                    className="text-xl font-semibold"
+                    placeholder="Task title"
+                  />
+                  {editTitleError && <p className="text-sm text-destructive mt-1">{editTitleError}</p>}
+                </div>
               ) : (
                 <DialogTitle className="text-xl">{task.title}</DialogTitle>
               )}
@@ -286,11 +307,12 @@ export const TaskDetailModal = ({
                 <label className="text-sm font-medium text-foreground/90 mb-1.5 block">Description</label>
                 <Textarea
                   value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
+                  onChange={(e) => { setEditDescription(e.target.value); setEditDescriptionError(''); }}
                   placeholder="Add a description..."
                   className="resize-none"
                   rows={3}
                 />
+                {editDescriptionError && <p className="text-sm text-destructive mt-1">{editDescriptionError}</p>}
               </div>
             ) : task.description ? (
               <div>

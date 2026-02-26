@@ -39,12 +39,20 @@ export const BoardSwitcher = ({
   const { toast } = useToast();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
+  const [boardNameError, setBoardNameError] = useState('');
   const [newBoardDescription, setNewBoardDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
   const handleCreateBoard = async () => {
-    if (!newBoardName.trim()) return;
-
+    if (!newBoardName.trim()) {
+      setBoardNameError('Board name is required');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(newBoardName.trim())) {
+      setBoardNameError('Must contain at least one letter');
+      return;
+    }
+    setBoardNameError('');
     setCreating(true);
     try {
       await onCreateBoard(newBoardName.trim(), newBoardDescription.trim() || undefined);
@@ -112,9 +120,10 @@ export const BoardSwitcher = ({
               <Input
                 id="name"
                 value={newBoardName}
-                onChange={(e) => setNewBoardName(e.target.value)}
+                onChange={(e) => { setNewBoardName(e.target.value); setBoardNameError(''); }}
                 placeholder="Enter board name..."
               />
+              {boardNameError && <p className="text-sm text-destructive mt-1">{boardNameError}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description (optional)</Label>

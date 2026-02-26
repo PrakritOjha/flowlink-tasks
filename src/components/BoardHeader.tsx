@@ -49,6 +49,7 @@ export const BoardHeader = () => {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [newName, setNewName] = useState('');
+  const [nameError, setNameError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const openRenameModal = () => {
@@ -57,7 +58,15 @@ export const BoardHeader = () => {
   };
 
   const handleRename = async () => {
-    if (!currentBoard || !newName.trim()) return;
+    if (!currentBoard || !newName.trim()) {
+      setNameError('Board name is required');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(newName.trim())) {
+      setNameError('Must contain at least one letter');
+      return;
+    }
+    setNameError('');
     setSaving(true);
     try {
       await handleUpdateBoard(currentBoard.id, { name: newName.trim() });
@@ -292,10 +301,11 @@ export const BoardHeader = () => {
             <Input
               id="board-name"
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={(e) => { setNewName(e.target.value); setNameError(''); }}
               placeholder="Enter board name..."
               onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); }}
             />
+            {nameError && <p className="text-sm text-destructive mt-1">{nameError}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameModalOpen(false)}>

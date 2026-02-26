@@ -24,7 +24,8 @@ const profileSchema = z.object({
     .string()
     .trim()
     .min(2, 'Name must be at least 2 characters')
-    .max(50, 'Name must be less than 50 characters'),
+    .max(50, 'Name must be less than 50 characters')
+    .refine((v) => /[a-zA-Z]/.test(v), 'Must contain at least one letter'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
