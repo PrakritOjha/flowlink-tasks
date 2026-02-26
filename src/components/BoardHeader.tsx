@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Filter, MoreHorizontal, Pencil, Trash2, UserPlus, X } from 'lucide-react';
+import { Crown, Eye, Filter, MoreHorizontal, Pencil, Trash2, UserPlus, X } from 'lucide-react';
 import { useBoard } from '@/hooks/useBoard';
 import { useBoardMembers } from '@/hooks/useBoardMembers';
 import { BoardSwitcher } from './BoardSwitcher';
 import { TeamManagementModal } from './TeamManagementModal';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,7 @@ export const BoardHeader = () => {
     boards, currentBoard, columns, tasks, dependencies,
     switchBoard, handleCreateBoard, handleUpdateBoard, handleDeleteBoard,
     filterAssignee, setFilterAssignee, filterStatus, setFilterStatus,
+    isOwner, currentUserRole,
   } = useBoard();
   const { members } = useBoardMembers(currentBoard?.id || null);
   const { toast } = useToast();
@@ -112,10 +114,32 @@ export const BoardHeader = () => {
             currentBoard={currentBoard}
             onBoardChange={switchBoard}
             onCreateBoard={handleCreateBoard}
+            canCreateBoard={isOwner}
           />
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {columns.length} columns · {totalTasks} tasks · {totalDependencies} dependencies
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {columns.length} columns · {totalTasks} tasks · {totalDependencies} dependencies
+            </p>
+            {currentUserRole && (
+              <Badge
+                className={
+                  currentUserRole === 'owner'
+                    ? 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100'
+                    : currentUserRole === 'editor'
+                    ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100'
+                    : currentUserRole === 'admin'
+                    ? 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100'
+                    : 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100'
+                }
+              >
+                {currentUserRole === 'owner' && <Crown className="w-3 h-3 mr-1" />}
+                {currentUserRole === 'editor' && <Pencil className="w-3 h-3 mr-1" />}
+                {currentUserRole === 'admin' && <Crown className="w-3 h-3 mr-1" />}
+                {currentUserRole === 'viewer' && <Eye className="w-3 h-3 mr-1" />}
+                {currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -227,26 +251,28 @@ export const BoardHeader = () => {
             </div>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={openRenameModal}>
-                <Pencil className="w-4 h-4 mr-2" />
-                Rename board
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteModalOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete board
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isOwner && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                  <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={openRenameModal}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Rename board
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteModalOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete board
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 

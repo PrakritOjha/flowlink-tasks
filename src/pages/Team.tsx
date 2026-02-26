@@ -29,7 +29,7 @@ const TeamContent = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { currentBoard } = useBoard();
-  const { members, invites, loading, refresh } = useBoardMembers(currentBoard?.id || null);
+  const { members, invites, ownerProfile, loading, refresh } = useBoardMembers(currentBoard?.id || null, currentBoard?.owner_id);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [sending, setSending] = useState(false);
@@ -77,12 +77,10 @@ const TeamContent = () => {
     }
   };
 
-  const ownerName =
-    user?.user_metadata?.display_name || user?.email || 'Owner';
-  const ownerInitials =
-    user?.user_metadata?.display_name?.slice(0, 2).toUpperCase() ||
-    user?.email?.slice(0, 2).toUpperCase() ||
-    'U';
+  const ownerName = ownerProfile.display_name
+    || (isOwner ? user?.user_metadata?.display_name : null)
+    || 'Owner';
+  const ownerInitials = ownerName.slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -189,10 +187,10 @@ const TeamContent = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium">
-                      {isOwner ? `${ownerName} (You)` : ownerName}
+                      {ownerName}{isOwner && ' (You)'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {user?.email}
+                      {isOwner ? user?.email : 'Board owner'}
                     </p>
                   </div>
                 </div>

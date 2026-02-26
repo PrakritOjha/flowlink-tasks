@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,27 +42,32 @@ export interface AssigneeOption {
   name: string;
 }
 
-const taskSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, 'Title is required')
-    .max(100, 'Title must be less than 100 characters'),
-  description: z
-    .string()
-    .trim()
-    .max(500, 'Description must be less than 500 characters')
-    .optional()
-    .transform(v => v === '' ? undefined : v),
-  assigneeId: z
-    .string()
-    .optional(),
-  dueDate: z.date().optional(),
-  icon: z.enum(['design', 'code', 'planning', 'dependency', 'requirements']),
-  column: z.string().min(1, 'Column is required'),
-});
+const buildTaskSchema = (existingTaskTitles: string[]) =>
+  z.object({
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Title is required')
+      .max(100, 'Title must be less than 100 characters')
+      .refine(
+        (title) => !existingTaskTitles.includes(title.toLowerCase()),
+        'A task with this name already exists on the board'
+      ),
+    description: z
+      .string()
+      .trim()
+      .min(1, 'Description is required')
+      .max(500, 'Description must be less than 500 characters'),
+    assigneeId: z
+      .string()
+      .min(1, 'Assignee is required')
+      .refine((v) => v !== '_unassigned', 'Please select an assignee'),
+    dueDate: z.date({ required_error: 'Due date is required' }),
+    icon: z.enum(['design', 'code', 'planning', 'dependency', 'requirements']),
+    column: z.string().min(1, 'Column is required'),
+  });
 
-type TaskFormData = z.infer<typeof taskSchema>;
+type TaskFormData = z.infer<ReturnType<typeof buildTaskSchema>>;
 
 interface CreateTaskModalProps {
   open: boolean;
@@ -71,6 +76,7 @@ interface CreateTaskModalProps {
   columns?: { id: string; title: string }[];
   defaultColumnId?: string;
   assigneeOptions?: AssigneeOption[];
+  existingTaskTitles?: string[];
 }
 
 const iconOptions = [
@@ -92,7 +98,13 @@ export const CreateTaskModal = ({
   ],
   defaultColumnId,
   assigneeOptions = [],
+  existingTaskTitles = [],
 }: CreateTaskModalProps) => {
+  const taskSchema = useMemo(
+    () => buildTaskSchema(existingTaskTitles),
+    [existingTaskTitles]
+  );
+
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {

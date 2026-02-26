@@ -16,13 +16,15 @@ import {
   DbTask,
   DbTaskDependency,
 } from '@/lib/database';
-import { fetchMyInvites, acceptBoardInvite } from '@/lib/database/members';
+import { fetchMyInvites, acceptBoardInvite, fetchCurrentUserRole, fetchUserMemberships, BoardRole } from '@/lib/database/members';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
 export interface BoardContextType {
   boards: DbBoard[];
   currentBoard: DbBoard | null;
+  currentUserRole: BoardRole | 'owner' | null;
+  isOwner: boolean;
   columns: DbColumn[];
   tasks: DbTask[];
   dependencies: DbTaskDependency[];
@@ -61,6 +63,7 @@ export const BoardProvider = ({ boardId, children }: { boardId?: string; childre
   const navigate = useNavigate();
   const [boards, setBoards] = useState<DbBoard[]>([]);
   const [currentBoard, setCurrentBoard] = useState<DbBoard | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<BoardRole | 'owner' | null>(null);
   const [columns, setColumns] = useState<DbColumn[]>([]);
   const [tasks, setTasks] = useState<DbTask[]>([]);
   const [dependencies, setDependencies] = useState<DbTaskDependency[]>([]);
@@ -78,6 +81,14 @@ export const BoardProvider = ({ boardId, children }: { boardId?: string; childre
   const loadBoardData = useCallback(async (board: DbBoard) => {
     try {
       setCurrentBoard(board);
+
+      // Derive current user's role on this board
+      if (user && board.owner_id === user.id) {
+        setCurrentUserRole('owner');
+      } else {
+        const role = await fetchCurrentUserRole(board.id);
+        setCurrentUserRole(role);
+      }
 
       const columnsData = await fetchColumns(board.id);
       setColumns(columnsData);
@@ -104,7 +115,7 @@ export const BoardProvider = ({ boardId, children }: { boardId?: string; childre
       setError((err as Error).message);
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // Initial load
   useEffect(() => {
@@ -134,14 +145,25 @@ export const BoardProvider = ({ boardId, children }: { boardId?: string; childre
 
         let allBoards = await fetchBoards();
 
-        // Create default board if none exist (with guard)
-        if (allBoards.length === 0 && !creatingDefaultBoard.current) {
-          creatingDefaultBoard.current = true;
-          try {
-            const newBoard = await createDefaultBoard();
-            allBoards = [newBoard];
-          } finally {
-            creatingDefaultBoard.current = false;
+        // Create default board only if user has no boards AND no memberships
+        // Also use localStorage to prevent duplicates from strict mode / auth flickers
+        const localKey = `defaultBoardCreated_${user.id}`;
+        if (
+          allBoards.length === 0 &&
+          !creatingDefaultBoard.current &&
+          !localStorage.getItem(localKey)
+        ) {
+          // Check if user is a member of any board (invited but boards not owned)
+          const memberships = await fetchUserMemberships();
+          if (memberships.length === 0) {
+            creatingDefaultBoard.current = true;
+            try {
+              localStorage.setItem(localKey, '1');
+              const newBoard = await createDefaultBoard();
+              allBoards = [newBoard];
+            } finally {
+              creatingDefaultBoard.current = false;
+            }
           }
         }
 
@@ -323,6 +345,8 @@ export const BoardProvider = ({ boardId, children }: { boardId?: string; childre
     <BoardContext.Provider value={{
       boards,
       currentBoard,
+      currentUserRole,
+      isOwner: currentUserRole === 'owner',
       columns,
       tasks,
       dependencies,

@@ -131,6 +131,34 @@ export const fetchMyInvites = async () => {
   return data;
 };
 
+export const fetchCurrentUserRole = async (boardId: string): Promise<BoardRole | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('board_members')
+    .select('role')
+    .eq('board_id', boardId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.role as BoardRole | null;
+};
+
+export const fetchUserMemberships = async (): Promise<{ board_id: string }[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('board_members')
+    .select('board_id')
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+  return data || [];
+};
+
 export const acceptBoardInvite = async (inviteId: string) => {
   const { data, error } = await supabase
     .rpc('accept_board_invite', { _invite_id: inviteId });

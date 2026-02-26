@@ -258,6 +258,7 @@ export const KanbanBoard = () => {
         columns={columns.map(c => ({ id: c.id, title: c.title }))}
         defaultColumnId={selectedColumnId || undefined}
         assigneeOptions={assigneeOptions}
+        existingTaskTitles={tasks.map(t => t.title.toLowerCase())}
       />
 
       <TaskDetailModal

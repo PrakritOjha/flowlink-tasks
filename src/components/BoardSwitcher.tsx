@@ -26,6 +26,7 @@ interface BoardSwitcherProps {
   currentBoard: DbBoard | null;
   onBoardChange: (boardId: string) => void;
   onCreateBoard: (name: string, description?: string) => Promise<void>;
+  canCreateBoard?: boolean;
 }
 
 export const BoardSwitcher = ({
@@ -33,6 +34,7 @@ export const BoardSwitcher = ({
   currentBoard,
   onBoardChange,
   onCreateBoard,
+  canCreateBoard = true,
 }: BoardSwitcherProps) => {
   const { toast } = useToast();
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -87,11 +89,15 @@ export const BoardSwitcher = ({
               </div>
             </DropdownMenuItem>
           ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setCreateModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create new board
-          </DropdownMenuItem>
+          {canCreateBoard && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCreateModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create new board
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
